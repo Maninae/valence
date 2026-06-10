@@ -103,5 +103,18 @@ export function initStandingWave() {
     requestAnimationFrame(frame);
   }
 
+  // magnetic detent: integers click into place, but the cancellation
+  // states between them stay reachable
+  slider.addEventListener("input", () => {
+    const k = +slider.value;
+    const n = Math.round(k);
+    if (Math.abs(k - n) < 0.1) slider.value = n;
+  });
+  slider.addEventListener("change", () => {
+    const k = +slider.value;
+    const n = Math.round(k);
+    if (Math.abs(k - n) < 0.25) slider.value = n;
+  });
+
   requestAnimationFrame(frame);
 }
