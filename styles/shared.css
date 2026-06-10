@@ -181,9 +181,12 @@ strong { color: var(--text-primary); }
   margin: 0 auto;
 }
 
-/* wide rows (interactives) escape the prose column */
-.wide {
-  width: min(var(--stage-max), 100%);
+/* wide rows (interactives) escape the prose column, centered on it.
+   .interactive.wide needs the extra specificity so .interactive's
+   `margin: 36px 0` (declared later) can't cancel the margin-left. */
+.wide,
+.interactive.wide {
+  width: min(var(--stage-max), calc(100vw - var(--sidebar-w) - 112px));
   margin-left: 50%;
   transform: translateX(-50%);
 }
@@ -769,5 +772,5 @@ input[type="range"]::-moz-range-thumb {
   .interactive { padding: 18px 16px; margin-left: -4px; margin-right: -4px; }
   .interactive-controls { gap: 12px; }
   input[type="range"] { width: 150px; }
-  .wide { width: 100%; margin-left: 0; transform: none; }
+  .wide, .interactive.wide { width: 100%; margin-left: 0; transform: none; }
 }
