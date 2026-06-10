@@ -13,6 +13,9 @@ built from first principles in sequence; never name-drop a term (orbital,
 shielding, electronegativity) before the site has constructed it.
 
 - Treat the reader as intelligent. Real vocabulary, no babying.
+- Keep prose LEAN. Owen had v1 cut by ~30%: no throat-clearing, no
+  scene-setting flourishes, no restating what an interactive already shows,
+  no recap padding. Short declarative sentences. When in doubt, cut.
 - **No hook questions** ("Ever wondered why...?") — Owen vetoed these as cheesy.
   Open sections with declarative claims or observations instead.
 - Less prose, more seeing and doing. Interactives are the spine; prose is
