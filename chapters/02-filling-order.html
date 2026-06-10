@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The filling order — Valence Shell Game</title>
+<meta name="description" content="Pauli, Hund, and aufbau via an interactive seating game; why 4s fills before 3d, and why every transition metal loses 4s electrons first.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="../styles/shared.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  /* page-local: spin diagram, ladder game, ion controls. Reuses tokens
+     from shared.css; never hardcodes colors. */
+
+  /* 2.1 — spin pair icon */
+  .spin-pair {
+    display: inline-flex;
+    gap: 14px;
+    margin: 14px 0 6px;
+    padding: 10px 16px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-secondary);
+    align-items: center;
+  }
+  .spin-arrow {
+    display: inline-block;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent);
+  }
+  .spin-arrow.down { color: var(--accent-2); text-shadow: 0 0 10px var(--accent-2); }
+
+  /* 2.3 ladder game — layout below the canvas */
+  .filling-target {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filling-target select {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--rule-strong);
+    border-radius: 9px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+  .filling-target select:focus { outline: none; border-color: var(--accent); }
+
+  .config-row {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    word-break: break-word;
+  }
+  .config-row .built {
+    color: var(--text-primary);
+  }
+  .config-row .target {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    margin-top: 4px;
+    display: block;
+  }
+  .config-row.complete {
+    border-color: var(--green);
+    box-shadow: 0 0 26px -10px var(--green);
+  }
+  .config-row.complete .built { color: var(--green); }
+
+  .feedback {
+    margin-top: 10px;
+    min-height: 1.4em;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .feedback.warn { color: var(--rose); }
+  .feedback.good { color: var(--green); }
+
+  /* 2.5 ion controls */
+  .ion-pick {
+    display: inline-flex;
+    border: 1px solid var(--rule-strong);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .ion-pick button {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--rule);
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .ion-pick button:last-child { border-right: none; }
+  .ion-pick button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+  }
+
+  /* boss progress */
+  .boss-progress { margin-top: 10px; }
+
+  /* On mobile, neutralize the .wide escape (margin-left + transform) so
+     interactives sit inside the prose column instead of overflowing. The
+     base shared.css sets .wide { width: 100% } on mobile but leaves the
+     transform intact, which pulls the panel off-screen. */
+  @media (max-width: 768px) {
+    .interactive.wide {
+      margin-left: 0;
+      transform: none;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<button class="menu-toggle" aria-label="Table of contents">menu</button>
+
+<aside class="sidebar">
+  <a class="sidebar-title" href="../index.html">Valence Shell Game</a>
+  <div class="sidebar-eyebrow">Chapter 2 of 5</div>
+  <ul class="toc"></ul>
+</aside>
+
+<div class="page">
+<div class="content">
+
+<header class="lecture-header">
+  <div class="eyebrow">Chapter 2</div>
+  <h1>The filling order</h1>
+  <p class="lecture-desc">
+    Orbitals are seats; electrons are an audience that has to sit. Three rules
+    govern the seating, and the seats themselves shift as the nucleus grows
+    heavier. That shift, more than any rule, explains the entire transition row.
+  </p>
+  <div class="tags">
+    <span class="tag">Pauli</span>
+    <span class="tag">Hund</span>
+    <span class="tag">aufbau</span>
+    <span class="tag">shielding</span>
+  </div>
+</header>
+
+<nav class="lecture-nav-top">
+  <a href="01-the-cloud.html">&#8592; Where electrons live</a>
+  <a href="03-the-table.html">Next: The table is a map &#8594;</a>
+</nav>
+
+<article>
+
+<p class="lecture-roadmap">
+  Chapter 1 built the seats. This chapter seats the audience. You will play
+  the filling game by hand, then watch the marquee chart of subshell energies
+  scrolling against atomic number — and see why 4s fills before 3d at potassium,
+  yet vanishes first when iron rusts.
+</p>
+
+<h2 id="pauli"><span class="section-number">2.1</span> Two electrons per orbital</h2>
+
+<p>
+  Electrons carry a built-in two-valued property called <strong>spin</strong>.
+  It is not a literal rotation — it is an intrinsic quantum number that takes
+  exactly two values, written $\uparrow$ and $\downarrow$. The
+  <strong>Pauli exclusion principle</strong> says no two electrons in an atom
+  can share the exact same quantum state. Since an orbital fixes $(n, \ell, m)$,
+  two electrons can share it only if their spins are opposite:
+</p>
+
+<div class="spin-pair">
+  <span class="spin-arrow">&uarr;</span>
+  <span class="spin-arrow down">&darr;</span>
+  <span>one orbital, two seats, opposite spins</span>
+</div>
+
+<p>
+  Every orbital fits two electrons. Period. Counting: one s orbital → 2
+  electrons; three p orbitals → 6; five d → 10; seven f → 14. Those numbers
+  are the widths of the blocks of the periodic table, but that is chapter 3.
+</p>
+
+<h2 id="shielding"><span class="section-number">2.2</span> Shielding breaks the tie</h2>
+
+<p>
+  In a hydrogen atom — one proton, one electron — energy depends only on $n$.
+  The 2s and 2p subshells are <em>degenerate</em>: same energy, no preference.
+  Add electrons and that symmetry breaks.
+</p>
+
+<p>
+  An outer electron does not feel the bare nuclear charge $Z$. Inner electrons
+  sit between it and the nucleus and partially cancel that pull. The outer
+  electron sees an <strong>effective charge</strong>:
+</p>
+
+<p style="text-align:center;">
+  $$Z_\mathrm{eff} = Z - \htmlData{tip=The shielding constant — how much pull the inner electrons cancel}{S}$$
+</p>
+
+<p>
+  Now chapter 1's penetration matters. Within a shell, s orbitals dip deepest
+  into the core cloud and feel close to the full nuclear pull; p dips less;
+  d barely at all. So $Z_\mathrm{eff}$ differs by subshell, and:
+</p>
+
+<div class="callout insight">
+  <div class="callout-label">Within one shell</div>
+  <p>$E_{ns} < E_{np} < E_{nd} < E_{nf}$ — the more an orbital penetrates the
+     core, the more nucleus it feels, and the lower (more negative) its energy.</p>
+</div>
+
+<div class="interactive wide">
+  <div class="interactive-label">Diagram</div>
+  <h4 class="interactive-title">Why s sees more nucleus than d</h4>
+  <p class="interactive-hint">An outer s electron pokes inside the inner-electron cloud and feels the bare nucleus. A d electron sits outside, feels a screened, weakened pull.</p>
+  <div class="interactive-stage" id="shielding-stage"></div>
+  <div class="interactive-readout" id="shielding-readout"></div>
+</div>
+
+<h2 id="rules"><span class="section-number">2.3</span> The seating rules</h2>
+
+<p>
+  Three rules, together, decide how electrons fill the orbitals of a
+  ground-state atom. State them once; then play.
+</p>
+
+<ul>
+  <li><strong>Aufbau</strong> ("building up"): each electron takes the lowest
+      open seat.</li>
+  <li><strong>Pauli</strong>: at most two electrons per orbital, opposite spins.</li>
+  <li><strong>Hund</strong>: within a subshell of equal orbitals, spread out
+      before pairing up. Same-spin electrons in different orbitals avoid each
+      other; pairing costs energy.</li>
+</ul>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Build an atom, one electron at a time</h4>
+  <p class="interactive-hint">Pick a target element. Click an orbital box to drop in the next electron. Misplace one and the rules will tell you why.</p>
+  <div class="interactive-stage" id="filling-stage"></div>
+  <div class="interactive-controls">
+    <div class="filling-target">
+      <span class="control-label">target</span>
+      <select id="filling-element"></select>
+    </div>
+    <button class="btn" id="filling-undo">&#8630; undo</button>
+    <button class="btn" id="filling-reset">reset</button>
+    <button class="btn primary" id="filling-auto">&#9654; auto-fill</button>
+  </div>
+  <div class="config-row" id="filling-config">
+    <div class="built" id="filling-built">&nbsp;</div>
+    <span class="target" id="filling-targetline"></span>
+  </div>
+  <div class="feedback" id="filling-feedback"></div>
+</div>
+
+<h2 id="curves"><span class="section-number">2.4</span> The rungs move</h2>
+
+<p>
+  The ladder in section 2.3 looks fixed. It is not. Subshell energies depend
+  on $Z$, and they shift at different rates. The 4s curve dives gently as
+  $Z$ grows; the 3d curve dives much faster once it starts to fill. Somewhere
+  between potassium and scandium, the curves cross.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">About the model</div>
+  <p>
+    Energies plotted below come from <strong>Slater's rules</strong>, an
+    empirical approximation for $Z_\mathrm{eff}$ first published in 1930. It
+    is not the truth — real atoms need numerical Hartree–Fock — but it
+    captures the crossings and the trends honestly with one page of arithmetic.
+    Treat the chart as a faithful model of a real effect.
+  </p>
+</div>
+
+<div class="interactive wide">
+  <div class="interactive-label">Marquee</div>
+  <h4 class="interactive-title">Subshell energy vs atomic number</h4>
+  <p class="interactive-hint">Drag the slider. Watch 4s and 3d — they cross between Ca (Z=20) and Sc (Z=21), and the moment they do, the filling order flips.</p>
+  <div class="interactive-stage" id="curves-stage"></div>
+  <div class="interactive-controls">
+    <div class="control-group">
+      <span class="control-label">atomic number Z</span>
+      <input type="range" id="curves-z" min="1" max="40" step="1" value="19">
+    </div>
+    <div class="control-group">
+      <span class="control-label">element</span>
+      <span class="control-value" id="curves-element">K · Z=19</span>
+    </div>
+  </div>
+  <div class="interactive-readout" id="curves-readout"></div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-label">Key insight</div>
+  <p>
+    The aufbau order is not a list to memorize. Every electron takes the
+    lowest seat available <em>at the time it arrives</em>, and the seats
+    themselves shift as $Z$ grows. At $Z=19$ the cheapest open seat is 4s.
+    By $Z=21$ that same seat is more expensive than 3d. Same physics, different
+    answer.
+  </p>
+</div>
+
+<h2 id="ions"><span class="section-number">2.5</span> Last in, first out &mdash; except</h2>
+
+<p>
+  Here is a fact that has puzzled chemistry students for a century: iron, when
+  it forms Fe<sup>2+</sup>, loses both of its 4s electrons before it touches
+  3d. But we just said 4s fills <em>first</em>. So why does it leave first too?
+</p>
+
+<p>
+  Look at the chart from 2.4 around iron ($Z=26$). The 3d curve has plunged.
+  3d sits deep below 4s — basically core. The <em>highest-energy</em>
+  electrons in neutral iron are the 4s pair, and ionization removes the
+  highest-energy electrons first. The seat 4s was cheap when iron was
+  filling; it became expensive once iron was full.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Ionize a transition metal</h4>
+  <p class="interactive-hint">Pick a neutral atom. Click "remove 2 electrons" — watch which seat they leave.</p>
+  <div class="interactive-stage" id="ion-stage"></div>
+  <div class="interactive-controls">
+    <div class="ion-pick" id="ion-pick">
+      <button aria-pressed="true" data-sym="Ti">Ti</button>
+      <button aria-pressed="false" data-sym="Fe">Fe</button>
+      <button aria-pressed="false" data-sym="Zn">Zn</button>
+    </div>
+    <button class="btn primary" id="ion-go">&minus; remove 2 electrons</button>
+    <button class="btn" id="ion-reset">reset</button>
+  </div>
+  <div class="interactive-readout" id="ion-readout"></div>
+</div>
+
+<h2 id="exceptions"><span class="section-number">2.6</span> The exceptions prove the rule</h2>
+
+<p>
+  Two elements in the first transition row refuse to follow the seating game:
+</p>
+
+<ul>
+  <li>Chromium ($Z=24$): not [Ar] 3d<sup>4</sup> 4s<sup>2</sup>, but
+      <strong>[Ar] 3d<sup>5</sup> 4s<sup>1</sup></strong>.</li>
+  <li>Copper ($Z=29$): not [Ar] 3d<sup>9</sup> 4s<sup>2</sup>, but
+      <strong>[Ar] 3d<sup>10</sup> 4s<sup>1</sup></strong>.</li>
+</ul>
+
+<p>
+  Near $Z=24$ and $Z=29$, 4s and 3d are very close in energy. When two subshells
+  are nearly degenerate, a smaller effect can break the tie: electrons in a
+  <strong>half-filled</strong> or <strong>fully-filled</strong> d set keep out
+  of each other's way better, lowering total repulsion. Promoting one 4s
+  electron to 3d gives Cr a half-filled d (five same-spin electrons, all in
+  different orbitals — Hund happy) and gives Cu a complete d shell. The energy
+  saved on repulsion is worth more than the energy paid to climb.
+</p>
+
+<div class="callout model">
+  <div class="callout-label">The real rule</div>
+  <p>
+    Atoms minimize <em>total</em> energy, not "energy per orbital". The aufbau
+    game we played in 2.3 is the right answer when subshell gaps are large.
+    When they are small, repulsion between paired electrons gets a vote, and
+    occasionally that vote tips the result. The exceptions confirm that the
+    underlying law is energy minimization, not a fixed seating chart.
+  </p>
+</div>
+
+<h2 id="recap"><span class="section-number">2.7</span> What you now have</h2>
+
+<ul>
+  <li>Pauli caps every orbital at two electrons of opposite spin.</li>
+  <li>Shielding plus penetration breaks the $n$-only degeneracy of hydrogen:
+      within a shell, $E_{ns} < E_{np} < E_{nd}$.</li>
+  <li>Aufbau + Hund + Pauli predicts the ground-state configuration of every
+      atom you tried.</li>
+  <li>Subshell energies move with $Z$; the 4s/3d crossing between Ca and Sc
+      explains both why 4s fills first <em>and</em> why transition metals
+      ionize from 4s.</li>
+  <li>Cr and Cu cheat the chart because the underlying law is total energy,
+      not the chart.</li>
+</ul>
+
+<div class="boss-panel">
+  <div class="interactive-label">Boss level</div>
+  <h4 class="interactive-title">Build the atom</h4>
+  <p class="interactive-hint">Five elements, four candidate configurations each. Pick the ground state. Cr and Cu come last; the chart will not save you.</p>
+  <div class="interactive-stage" id="boss-stage"></div>
+  <div class="quiz-options" id="boss-options"></div>
+  <div class="interactive-readout" id="boss-readout"></div>
+  <div class="boss-progress" id="boss-progress"></div>
+</div>
+
+</article>
+
+<nav class="lecture-nav">
+  <a class="nav-card prev" href="01-the-cloud.html">
+    <div class="nav-dir">Previous</div>
+    <div class="nav-title">Where electrons live</div>
+  </a>
+  <a class="nav-card next" href="03-the-table.html">
+    <div class="nav-dir">Next</div>
+    <div class="nav-title">The table is a map</div>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  valence shell game · chapter 2 of 5
+</footer>
+
+</div>
+</div>
+
+<script type="module" src="../scripts/shared.js"></script>
+<script type="module" src="../scripts/ch02/main.js"></script>
+</body>
+</html>

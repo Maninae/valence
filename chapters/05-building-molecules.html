@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building molecules &mdash; Valence Shell Game</title>
+<meta name="description" content="Lewis dot notation from valence counts. Octets from s+p capacity. A working builder for real molecules: water, ammonia, methane, carbon dioxide, hydrogen cyanide.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="../styles/shared.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+/* ---------- chapter 5 page-local styles ---------- */
+
+/* 5.1 — element strip */
+#lewis-strip-stage {
+  flex-direction: column;
+  align-items: center;
+}
+.lewis-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 4px 0 14px;
+  max-width: 760px;
+}
+.lewis-strip .el-btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--rule);
+  padding: 8px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 44px;
+  transition: all 0.12s ease;
+}
+.lewis-strip .el-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.lewis-strip .el-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 14px -6px var(--accent);
+}
+.lewis-strip .el-spacer { width: 100%; height: 0; }
+
+.lewis-readout-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.lewis-readout-row .lewis-count {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+/* 5.2 — octet/duet diagram */
+.octet-diagrams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 760px;
+  margin: 14px auto 0;
+}
+.octet-diagrams figure {
+  text-align: center;
+}
+.octet-diagrams figcaption {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+.octet-diagrams svg { width: 100%; max-width: 340px; height: auto; }
+@media (max-width: 560px) {
+  .octet-diagrams { grid-template-columns: 1fr; }
+}
+
+/* 5.3 — worked examples (H2O, NH3) */
+.worked-svg {
+  display: block;
+  margin: 12px auto 0;
+  max-width: 380px;
+  width: 100%;
+  height: auto;
+}
+
+/* 5.4 — Lewis builder */
+.builder-stage {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .builder-stage { grid-template-columns: 1fr; }
+}
+
+/* Mobile: undo the .wide column-extension hack so the builder stays in the
+   prose column (it doesn't have room to break out). */
+@media (max-width: 768px) {
+  .interactive.wide {
+    margin-left: 0;
+    transform: none;
+  }
+}
+.builder-canvas-wrap {
+  background: var(--bg-deep);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+.builder-canvas-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 600 / 380;
+  max-height: 100%;
+}
+.builder-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.builder-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.builder-card-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.builder-card-title {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.builder-card-sub {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.builder-electron-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.builder-electron-row .placed { color: var(--text-primary); }
+.builder-electron-row .total { color: var(--text-muted); }
+.builder-atom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.builder-atom-line {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.builder-atom-line.full { color: var(--green); }
+.builder-atom-line.over { color: var(--rose); }
+.builder-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  min-height: 1.4em;
+}
+.builder-status.win { color: var(--green); }
+.builder-status.hint { color: var(--amber); }
+.builder-status.fail { color: var(--rose); }
+.builder-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.builder-ladder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.builder-ladder .lad-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--rule);
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.builder-ladder .lad-btn.solved {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 50%, var(--rule));
+}
+.builder-ladder .lad-btn.current {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.builder-ladder .lad-btn.locked { opacity: 0.45; cursor: not-allowed; }
+.builder-ladder .lad-btn:disabled { cursor: default; }
+
+/* Builder SVG interaction targets */
+.builder-canvas-wrap .gap-hit {
+  fill: transparent;
+  stroke: transparent;
+  cursor: pointer;
+  pointer-events: all;
+}
+.builder-canvas-wrap .gap-hit:hover ~ .gap-hint,
+.builder-canvas-wrap .gap-hit:hover {
+  /* hover handled via group below */
+}
+.builder-canvas-wrap .atom-hit {
+  cursor: pointer;
+  pointer-events: all;
+}
+.builder-canvas-wrap .atom-symbol {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+}
+.builder-canvas-wrap .atom-halo {
+  fill: var(--bg-deep);
+  stroke: var(--rule-strong);
+  stroke-width: 1.2;
+  transition: stroke 0.2s ease, filter 0.2s ease;
+}
+.builder-canvas-wrap .atom-halo.full {
+  stroke: var(--green);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--green) 60%, transparent));
+}
+.builder-canvas-wrap .atom-halo.over {
+  stroke: var(--rose);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--rose) 60%, transparent));
+}
+.builder-canvas-wrap .bond-line {
+  stroke: var(--text-secondary);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.builder-canvas-wrap .gap-glow {
+  fill: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.builder-canvas-wrap g.gap-group:hover .gap-glow { opacity: 0.18; }
+.builder-canvas-wrap .lone-dot {
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
+.builder-canvas-wrap .atom-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* 5.5 — bond comparison */
+.bond-compare {
+  display: block;
+  margin: 18px auto 0;
+  max-width: 760px;
+  width: 100%;
+  height: auto;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<button class="menu-toggle" aria-label="Table of contents">menu</button>
+
+<aside class="sidebar">
+  <a class="sidebar-title" href="../index.html">Valence Shell Game</a>
+  <div class="sidebar-eyebrow">Chapter 5 of 5</div>
+  <ul class="toc"></ul>
+</aside>
+
+<div class="page">
+<div class="content">
+
+<header class="lecture-header">
+  <div class="eyebrow">Chapter 5</div>
+  <h1>Building molecules</h1>
+  <p class="lecture-desc">
+    Valence electrons get a piece of paper. The dots become a notation; the
+    notation becomes a tool. With it you can sit down and build real
+    molecules &mdash; water, ammonia, methane, the air you breathe.
+  </p>
+  <div class="tags">
+    <span class="tag">Lewis structures</span>
+    <span class="tag">octets</span>
+    <span class="tag">covalent bonds</span>
+  </div>
+</header>
+
+<nav class="lecture-nav-top">
+  <a href="04-one-continuum.html">&#8592; Prev: One continuum, not three bonds</a>
+  <a href="../index.html">All chapters &#8594;</a>
+</nav>
+
+<article>
+
+<p class="lecture-roadmap">
+  Chapter 3 told you which electrons matter: the outermost ones. Chapter 4
+  told you what they do: share, or tug. This chapter is the bookkeeping.
+  A clean notation for valence electrons turns into a hands-on builder, and
+  the builder lets you assemble the molecules that make up everything you
+  drink, smell, and breathe.
+</p>
+
+<h2 id="dots"><span class="section-number">5.1</span> Dots for the outermost</h2>
+
+<p>
+  The electrons that do chemistry are the valence electrons: the ones in the
+  outer $s$ and $p$ subshells. Everything else is buried too deep to matter
+  for bonding. Gilbert Lewis, in 1916, proposed a notation as compact as the
+  idea: write the element's symbol, then draw one dot for each valence
+  electron around it. Top, right, bottom, left &mdash; one at each side first,
+  then double up. Nothing else.
+</p>
+
+<div class="interactive">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Lewis dot symbols</h4>
+  <p class="interactive-hint">Click any main-group element. The dots place themselves singly on four sides first, then pair up &mdash; the same Hund-style rule the orbitals followed.</p>
+  <div class="interactive-stage" id="lewis-strip-stage">
+    <div class="lewis-strip" id="lewis-strip"></div>
+    <svg id="lewis-symbol" viewBox="0 0 240 200" width="240" height="200" aria-hidden="true" style="display:block;margin:8px auto 0;"></svg>
+    <div class="lewis-readout-row" id="lewis-readout"></div>
+  </div>
+</div>
+
+<p>
+  Notice the columns line up with valence count. Every alkali metal gets one
+  dot; every halogen gets seven. Lewis's notation is just the periodic
+  table's group number, drawn.
+</p>
+
+<h2 id="octet"><span class="section-number">5.2</span> Eight is full</h2>
+
+<p>
+  Why does a row of the table end at eight elements? Because a shell's outer
+  layer is exactly one $s$ subshell plus one $p$ subshell: $1 + 3 = 4$
+  orbitals, and Pauli says two electrons per orbital, so
+  $4 \times 2 = 8$ electrons. Eight is the maximum number of valence
+  electrons a shell can hold &mdash; the noble-gas state. Chapter 3 told you
+  the nobles sit at the right edge of each row because their outer shell is
+  full. This is what "full" means.
+</p>
+
+<p>
+  Every atom wants that state for the same reason it always has: it's the
+  lowest energy available. So atoms bond by sharing or transferring
+  electrons until each one can <em>count</em> eight. (Hydrogen is the one
+  exception: shell 1 has only the $1s$ orbital, so its full shell is two,
+  not eight. A <strong>duet</strong>, not an octet.)
+</p>
+
+<div class="callout definition">
+  <div class="callout-label">The octet rule</div>
+  <p>
+    Main-group atoms bond so that each one ends up surrounded by enough
+    electrons to count a full outer shell: eight for everything past
+    hydrogen, two for hydrogen.
+  </p>
+</div>
+
+<p>
+  Here is the trick that makes bonding work. A shared pair belongs to
+  <em>both</em> atoms at once for counting purposes. Neither atom owns those
+  two electrons outright, but each one gets to add them to its own total.
+  That is what a covalent bond is, on paper.
+</p>
+
+<div class="octet-diagrams" id="octet-diagrams"></div>
+
+<h2 id="lines"><span class="section-number">5.3</span> Lines are pairs</h2>
+
+<p>
+  Two dots between atoms means a shared pair, which means a bond. Drawing
+  the same thing over and over is tedious, so chemists replaced the shared
+  dots with a line: <strong>one line = one shared pair = one bond</strong>.
+  Pairs that stay on a single atom (unshared) are still drawn as two dots,
+  side by side. Those are called <strong>lone pairs</strong>.
+</p>
+
+<p>
+  Two worked examples are worth a thousand rules. The recipe is the same
+  every time: count the total valence electrons in the molecule; arrange
+  the atoms with the least-electronegative one in the center (hydrogen is
+  never central, since its full shell is only two); draw single bonds to
+  start; put any leftover electrons as lone pairs on the outer atoms
+  first, then on the center; if anyone is short of eight, promote a single
+  bond to a double or triple by sliding a lone pair into the gap.
+</p>
+
+<div class="callout example">
+  <div class="callout-label">Worked example: water (H&#8322;O)</div>
+  <p>
+    Oxygen brings 6 valence electrons; each hydrogen brings 1. Total = 8.
+    Oxygen sits in the middle. Two O&ndash;H single bonds use 4 electrons.
+    Oxygen now counts 4 (two shared pairs). The remaining 4 electrons go on
+    oxygen as two lone pairs. Each H counts 2 (its duet). Oxygen counts
+    $2 + 2 + 2 + 2 = 8$. Done.
+  </p>
+  <svg class="worked-svg" id="example-h2o" viewBox="0 0 360 200" aria-hidden="true"></svg>
+</div>
+
+<div class="callout example">
+  <div class="callout-label">Worked example: ammonia (NH&#8323;)</div>
+  <p>
+    Nitrogen brings 5, each hydrogen brings 1. Total = 8. Nitrogen sits in
+    the middle. Three N&ndash;H single bonds use 6 electrons. Two left:
+    a single lone pair on nitrogen. Each H counts 2. Nitrogen counts
+    $2 + 2 + 2 + 2 = 8$. Done.
+  </p>
+  <svg class="worked-svg" id="example-nh3" viewBox="0 0 360 200" aria-hidden="true"></svg>
+</div>
+
+<h2 id="builder"><span class="section-number">5.4</span> The builder</h2>
+
+<p>
+  Time to do it yourself. The molecule's atoms are pre-arranged in a
+  sensible skeleton. You decide the bonds and the lone pairs. Click between
+  two adjacent atoms to cycle the bond order
+  ($0 \to 1 \to 2 \to 3 \to 0$). Click an atom to add a lone pair (it
+  cycles through $0, 1, 2, 3, 4$ pairs, then wraps).
+</p>
+
+<p>
+  The side panel keeps score. Each atom glows
+  <span style="color: var(--green); font-weight: 600;">green</span> when its
+  count reaches its target shell (8, or 2 for hydrogen) and
+  <span style="color: var(--rose); font-weight: 600;">rose</span> if you
+  overshoot. Use all the electrons, satisfy every atom, and the molecule is
+  done. Hint reveals one nudge; reset clears the board. The ladder unlocks
+  one molecule at a time.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Lewis structure builder</h4>
+  <p class="interactive-hint">Click a gap to add or cycle a bond. Click an atom to drop a lone pair.</p>
+  <div class="builder-stage">
+    <div class="builder-canvas-wrap">
+      <svg id="builder-svg" viewBox="0 0 600 380" aria-label="Lewis structure builder"></svg>
+    </div>
+    <div class="builder-side">
+      <div class="builder-card">
+        <div class="builder-card-label">Now building</div>
+        <div class="builder-card-title" id="builder-title">H&#8322;</div>
+        <div class="builder-card-sub" id="builder-sub">Hydrogen gas</div>
+        <div class="builder-electron-row">
+          <span>electrons placed</span>
+          <span><span class="placed" id="builder-placed">0</span><span class="total"> / <span id="builder-total">2</span></span></span>
+        </div>
+      </div>
+      <div class="builder-card">
+        <div class="builder-card-label">Atom shells</div>
+        <div class="builder-atom-list" id="builder-atom-list"></div>
+      </div>
+      <div class="builder-card">
+        <div class="builder-card-label">Status</div>
+        <div class="builder-status" id="builder-status">build the structure.</div>
+        <div class="builder-controls" style="margin-top: 10px;">
+          <button class="btn" id="builder-hint">hint</button>
+          <button class="btn" id="builder-reset">reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="builder-ladder" id="builder-ladder"></div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-label">Why it works</div>
+  <p>
+    Nothing in this builder is invented. Each click is moving electrons
+    between two accounts: "shared with a neighbor" or "kept as a lone
+    pair." The win condition is just the octet rule applied honestly to
+    every atom. The fact that you can reach a valid answer for every real
+    molecule in the ladder is the whole reason chemistry has a notation at
+    all.
+  </p>
+</div>
+
+<h2 id="multiple"><span class="section-number">5.5</span> Double and triple are shorter and stronger</h2>
+
+<p>
+  CO&#8322;, O&#8322;, and N&#8322; force you to draw double and triple
+  bonds. They aren't a separate kind of bond &mdash; just more shared pairs
+  in the same gap. More shared pairs means more glue between the same two
+  nuclei, which means the nuclei can sit closer without repelling, and the
+  bond is harder to break. Both effects show up in the numbers for
+  carbon&ndash;carbon bonds:
+</p>
+
+<svg class="bond-compare" id="bond-compare" viewBox="0 0 720 260" aria-hidden="true"></svg>
+
+<p>
+  Triple bonds are why nitrogen gas, $\text{N}_2$, is famously inert.
+  Pulling two nitrogen atoms apart costs <strong>945 kJ/mol</strong>
+  &mdash; almost three times the energy of an O&ndash;H single bond.
+  Roughly four-fifths of the air around you is N&#8322;, and almost none of
+  it ever reacts with anything at room temperature. The whole atmosphere
+  is held in place by a triple bond.
+</p>
+
+<h2 id="limits"><span class="section-number">5.6</span> What the dots can't say</h2>
+
+<p>
+  Lewis structures are flat bookkeeping. They are right about
+  <em>which</em> atoms are bonded and <em>how many</em> pairs sit where.
+  They are silent about everything else. They don't tell you that
+  methane's four C&ndash;H bonds aim outward to the corners of a
+  tetrahedron, not a square. They don't tell you that water is bent at
+  about 105&deg; instead of straight, or why that bend gives water its
+  whole personality. They don't tell you that water molecules stick to
+  each other through tiny extra attractions called hydrogen bonds, and
+  that hydrogen bonds are why ice floats, why your DNA holds its shape,
+  why your blood is liquid at body temperature.
+</p>
+
+<p>
+  Geometry and stickiness live behind the door the notation got you to.
+  Chapter 5 stops here; the next site picks up there.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">Coming in v2</div>
+  <p>
+    VSEPR (Valence Shell Electron Pair Repulsion) turns the dots into 3D
+    shapes by treating each pair as a balloon that pushes the others away.
+    Polarity (chapter 4) plus geometry decides whether a molecule has a
+    net dipole, which decides whether it dissolves in water, which decides
+    most of biology. Hydrogen bonding follows.
+  </p>
+</div>
+
+<h2 id="recap"><span class="section-number">5.7</span> What you now have</h2>
+
+<ul>
+  <li>Lewis dot symbols: the valence count drawn around the element's
+      symbol, dots placed singly before they pair (Hund's old rule, in
+      ink).</li>
+  <li>The octet (or duet for hydrogen): one $s$ plus three $p$ orbitals,
+      capped by Pauli, equals an outer shell of eight electrons &mdash; the
+      noble-gas state every atom slides toward.</li>
+  <li>A bond is a shared pair both atoms count. Two pairs is a double,
+      three is a triple; each step is shorter and stronger.</li>
+  <li>The Lewis structure of a small molecule is recoverable from rules
+      alone: count valence, lay out single bonds, distribute the rest as
+      lone pairs, promote bonds where atoms come up short.</li>
+</ul>
+
+<p>
+  Five chapters back, the question was "where does an electron live?" The
+  answer was a probability cloud labeled by three quantum numbers. From
+  there: Pauli and Hund seated the electrons; shielding picked the order;
+  the seating chart unfolded into the periodic table; valence electrons
+  explained why columns share chemistry; the energy well of two atoms
+  meeting explained bonding; one continuum (covalent to polar to ionic)
+  collapsed the bond zoo to a single axis; and the same valence electrons
+  became a working notation for assembling molecules.
+</p>
+
+<p>
+  All of it was one rule, applied honestly at every step:
+  <strong>electrons go to the lowest energy available, given the
+  constraints.</strong> The constraints change &mdash; one nucleus, then
+  many electrons, then many atoms &mdash; but the rule does not. That is
+  what made this whole thing a single course instead of five.
+</p>
+
+<div class="boss-panel">
+  <div class="interactive-label">Boss level</div>
+  <h4 class="interactive-title">The Architect</h4>
+  <p class="interactive-hint">Exam mode: no per-atom glow, no auto-validate. Build three molecules &mdash; ammonia, carbon dioxide, nitrogen gas &mdash; and press check. Three checks per molecule.</p>
+  <div class="builder-stage">
+    <div class="builder-canvas-wrap">
+      <svg id="boss-svg" viewBox="0 0 600 380" aria-label="Architect challenge"></svg>
+    </div>
+    <div class="builder-side">
+      <div class="builder-card">
+        <div class="builder-card-label">Challenge</div>
+        <div class="builder-card-title" id="boss-title">NH&#8323;</div>
+        <div class="builder-card-sub" id="boss-sub">Round 1 of 3</div>
+        <div class="builder-electron-row">
+          <span>electrons placed</span>
+          <span><span class="placed" id="boss-placed">0</span><span class="total"> / <span id="boss-total">8</span></span></span>
+        </div>
+      </div>
+      <div class="builder-card">
+        <div class="builder-card-label">Checks remaining</div>
+        <div class="builder-card-title" id="boss-checks" style="font-size: 22px;">3</div>
+      </div>
+      <div class="builder-card">
+        <div class="builder-card-label">Status</div>
+        <div class="builder-status" id="boss-status">build the molecule, then check.</div>
+        <div class="builder-controls" style="margin-top: 10px;">
+          <button class="btn primary" id="boss-check">check</button>
+          <button class="btn" id="boss-reset">reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="interactive-readout" id="boss-progress" style="margin-top: 12px;"></div>
+</div>
+
+</article>
+
+<nav class="lecture-nav">
+  <a class="nav-card prev" href="04-one-continuum.html">
+    <div class="nav-dir">Prev</div>
+    <div class="nav-title">One continuum, not three bonds</div>
+  </a>
+  <a class="nav-card next" href="../index.html">
+    <div class="nav-dir">Finish</div>
+    <div class="nav-title">Back to all chapters</div>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  valence shell game &middot; chapter 5 of 5
+</footer>
+
+</div>
+</div>
+
+<script type="module" src="../scripts/shared.js"></script>
+<script type="module" src="../scripts/ch05/main.js"></script>
+</body>
+</html>

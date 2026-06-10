@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valence Shell Game — how electrons arrange, from first principles</title>
+<meta name="description" content="An interactive course on electrons, orbitals, the periodic table, and chemical bonds. No chemistry background needed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/shared.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body class="hub-page">
+
+<header class="hero">
+  <div class="hero-cloud" id="hero-cloud"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">An interactive course</div>
+    <h1>Valence Shell Game</h1>
+    <p class="hero-sub">
+      Electrons arrange themselves inside atoms by one rule: find the lowest
+      energy available. This site builds that rule from scratch, then uses it
+      to derive the periodic table and explain why atoms bond.
+    </p>
+    <p class="hero-prereq">prerequisites: protons, neutrons, electrons. that's all.</p>
+  </div>
+</header>
+
+<main class="hub-main">
+  <div class="hub-section-label">Chapters</div>
+  <div class="chapter-grid">
+
+    <a class="chapter-card" href="chapters/01-the-cloud.html">
+      <div class="chapter-num">01</div>
+      <h3>Where electrons live</h3>
+      <p>The orbiting-planet picture of the atom collapses in ten picoseconds.
+         What replaces it: standing waves, quantized energies, and electron
+         clouds you can rotate with your mouse.</p>
+      <div class="tags">
+        <span class="tag">standing waves</span>
+        <span class="tag">orbitals</span>
+        <span class="tag">3D viewer</span>
+      </div>
+    </a>
+
+    <a class="chapter-card" href="chapters/02-filling-order.html">
+      <div class="chapter-num">02</div>
+      <h3>The filling order</h3>
+      <p>With many electrons, three seating rules decide who goes where. Watch
+         the energy ladder's rungs drift and cross as the nucleus grows, and
+         see exactly why 4s fills before 3d.</p>
+      <div class="tags">
+        <span class="tag">aufbau</span>
+        <span class="tag">shielding</span>
+        <span class="tag">the 4s/3d crossing</span>
+      </div>
+    </a>
+
+    <a class="chapter-card" href="chapters/03-the-table.html">
+      <div class="chapter-num">03</div>
+      <h3>The table is a map</h3>
+      <p>The periodic table's odd shape is the filling order made visible.
+         Build it row by row, then watch one number, the pull felt by outer
+         electrons, drive every trend across it.</p>
+      <div class="tags">
+        <span class="tag">blocks</span>
+        <span class="tag">valence</span>
+        <span class="tag">trends</span>
+      </div>
+    </a>
+
+    <a class="chapter-card" href="chapters/04-one-continuum.html">
+      <div class="chapter-num">04</div>
+      <h3>One continuum, not three bonds</h3>
+      <p>Covalent, polar, ionic: textbooks present three kinds of bond.
+         There is one, with a dial. Drag the tug-of-war and morph a shared
+         electron cloud into a full transfer.</p>
+      <div class="tags">
+        <span class="tag">energy well</span>
+        <span class="tag">electronegativity</span>
+        <span class="tag">NaCl lattice</span>
+      </div>
+    </a>
+
+    <a class="chapter-card" href="chapters/05-building-molecules.html">
+      <div class="chapter-num">05</div>
+      <h3>Building molecules</h3>
+      <p>Valence electrons become a notation, the notation becomes a tool.
+         Assemble real molecules dot by dot, with the octet rule checking
+         your work.</p>
+      <div class="tags">
+        <span class="tag">lewis structures</span>
+        <span class="tag">octet</span>
+        <span class="tag">builder</span>
+      </div>
+    </a>
+
+    <div class="chapter-card coming-soon">
+      <div class="chapter-num">v2</div>
+      <h3>Shapes &amp; stickiness</h3>
+      <p>Why molecules take 3D shapes (electron domains shoving each other),
+         and why water is so strange (hydrogen bonding). Coming next.</p>
+      <div class="tags">
+        <span class="tag">vsepr</span>
+        <span class="tag">hydrogen bonds</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="site-footer">
+    valence shell game · built by owen wang · element data from the
+    <a href="https://github.com/Bowserinator/Periodic-Table-JSON">periodic-table-json</a>
+    dataset · orbital energies modeled with Slater's rules
+  </footer>
+</main>
+
+<script type="module">
+  import { createOrbitalCloud } from "./scripts/orbital-cloud.js";
+
+  const el = document.getElementById("hero-cloud");
+  try {
+    const cloud = createOrbitalCloud(el, {
+      n: 3, l: 2, m: 0,
+      points: 16000,
+      autoRotate: true,
+      interactive: false,
+    });
+    // slow cycle through showcase orbitals
+    const showcase = [[3, 2, 0], [2, 1, 0], [3, 2, -2], [4, 3, 0], [3, 0, 0]];
+    let i = 0;
+    setInterval(() => {
+      i = (i + 1) % showcase.length;
+      cloud.setOrbital(...showcase[i]);
+    }, 7000);
+  } catch (e) {
+    el.style.background =
+      "radial-gradient(ellipse at center, rgba(167,139,250,0.18), transparent 60%)";
+  }
+</script>
+</body>
+</html>

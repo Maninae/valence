@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One continuum, not three bonds — Valence Shell Game</title>
+<meta name="description" content="Covalent, polar, ionic — chemistry's three bond types are three regions on a single dial: the electronegativity difference between the atoms.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="../styles/shared.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  /* page-local styles for ch04 — keep tokens via var() */
+
+  /* split-stage layout for the energy well (cartoon on top, curve on bottom) */
+  .well-stage { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .well-stage canvas { width: 100%; }
+
+  /* element pickers for the tug-of-war */
+  .element-picker {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 6px; border: 1px solid var(--rule); border-radius: 10px;
+    background: var(--bg-elevated);
+  }
+  .element-btn {
+    font-family: var(--mono); font-size: 12.5px;
+    padding: 5px 10px; border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer; min-width: 36px;
+  }
+  .element-btn:hover { border-color: var(--rule-strong); color: var(--text-primary); }
+  .element-btn[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .picker-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .picker-row .control-label { min-width: 110px; }
+
+  /* continuum bar wrapper (for sec 4.5 and boss reveal) */
+  .continuum-wrap { width: 100%; }
+
+  /* chip rows of real bonds for sec 4.5 */
+  .bond-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 16px; justify-content: center;
+  }
+  .bond-chip {
+    font-family: var(--mono); font-size: 12.5px;
+    padding: 5px 11px; border-radius: 99px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--rule-strong);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+  }
+  .bond-chip:hover, .bond-chip.active {
+    border-color: var(--accent); color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
+  }
+
+  /* boss option row for "call the bond" */
+  .bond-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 16px 0; }
+  @media (max-width: 600px) {
+    .bond-options { grid-template-columns: 1fr; }
+    .picker-row .control-label { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<button class="menu-toggle" aria-label="Table of contents">menu</button>
+
+<aside class="sidebar">
+  <a class="sidebar-title" href="../index.html">Valence Shell Game</a>
+  <div class="sidebar-eyebrow">Chapter 4 of 5</div>
+  <ul class="toc"></ul>
+</aside>
+
+<div class="page">
+<div class="content">
+
+<header class="lecture-header">
+  <div class="eyebrow">Chapter 4</div>
+  <h1>One continuum, not three bonds</h1>
+  <p class="lecture-desc">
+    Textbooks teach three kinds of bond — covalent, polar, ionic — as if they
+    were three separate phenomena. They aren't. There is one phenomenon on a
+    dial, and the dial is the electronegativity difference between the atoms.
+  </p>
+  <div class="tags">
+    <span class="tag">bonding</span>
+    <span class="tag">electronegativity</span>
+    <span class="tag">ionic crystal</span>
+  </div>
+</header>
+
+<nav class="lecture-nav-top">
+  <a href="03-the-table.html">&#8592; The table is a map</a>
+  <a href="05-building-molecules.html">Building molecules &#8594;</a>
+</nav>
+
+<article>
+
+<p class="lecture-roadmap">
+  Atoms stick together because shared territory lowers their energy. The
+  sharing can be even or lopsided, and in the extreme the cloud detaches and
+  the two atoms become ions. The whole story is one continuous parameter, and
+  this chapter walks it from end to end.
+</p>
+
+<h2 id="well"><span class="section-number">4.1</span> Why atoms stick at all</h2>
+
+<p>
+  Bring two hydrogen atoms close together. From far away they barely notice
+  each other. As their probability clouds begin to overlap, an electron
+  sitting between the two nuclei is now pulled by <em>both</em> protons at
+  once: shared territory is cheap territory, energetically. Push the nuclei
+  too close and the picture inverts — the two positive nuclei start repelling
+  each other directly, and the electron clouds get crushed into too small a
+  space. In between is a sweet spot.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">The hydrogen energy well</h4>
+  <p class="interactive-hint">Drag the separation. Watch the clouds merge, then crush. The curve below is the potential energy: its minimum is the bond.</p>
+  <div class="interactive-stage" id="well-stage"></div>
+  <div class="interactive-controls">
+    <div class="control-group">
+      <span class="control-label">separation</span>
+      <input type="range" id="well-r" min="0.3" max="3.0" step="0.005" value="2.4">
+    </div>
+    <button class="btn primary" id="well-release">&#9654; release</button>
+    <div class="control-group">
+      <span class="control-label">readout</span>
+      <span class="control-value" id="well-readout">r = 2.40 &Aring; &nbsp;&nbsp; E = &minus;0.02 eV</span>
+    </div>
+  </div>
+</div>
+
+<div class="callout definition">
+  <div class="callout-label">Definition</div>
+  <p>
+    The <strong>bond energy</strong> is the depth of that well: how much you'd
+    have to pay to rip the two atoms back apart. The <strong>bond length</strong>
+    is where the well's floor sits: the equilibrium separation. For H&ndash;H
+    the floor is at $r \approx 0.74$ &Aring; and the depth is $\approx 4.5$ eV.
+    Every "bond" in chemistry is a well of this shape, just with different
+    floor and depth.
+  </p>
+</div>
+
+<h2 id="sharing"><span class="section-number">4.2</span> Sharing, in wave language</h2>
+
+<p>
+  Chapter 1 set up a payoff for later: the electron wave has a
+  <strong>sign</strong>, and when two waves overlap, signs decide whether they
+  reinforce or cancel. The shared cloud that lowers the energy in section 4.1
+  is exactly that reinforcement. Two atomic waves with the
+  <em>same</em> sign in the overlap region add to a larger amplitude there;
+  squaring gives extra probability density between the nuclei — exactly where
+  an extra electron pays the lowest price.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Two clouds, one bond</h4>
+  <p class="interactive-hint">Two 1s clouds overlap in phase. The midline density is the shared pair: that's a covalent bond.</p>
+  <div class="interactive-stage" id="sharing-stage"></div>
+  <div class="interactive-readout" id="sharing-readout">same-sign overlap &rarr; extra density between the nuclei &rarr; the bond</div>
+</div>
+
+<div class="callout definition">
+  <div class="callout-label">Definition</div>
+  <p>
+    A <strong>covalent bond</strong> is a shared pair of electrons sitting in
+    a region of overlap between two atoms. "Shared" here means literal:
+    the same two electrons spend time around both nuclei, and the cloud
+    between them carries the extra density.
+  </p>
+</div>
+
+<h2 id="tug"><span class="section-number">4.3</span> The tug-of-war</h2>
+
+<p>
+  H&ndash;H is the symmetric case: both atoms pull the shared cloud equally.
+  Most bonds aren't symmetric. Chapter 3 introduced
+  <strong>electronegativity</strong>: a number on each atom measuring how
+  greedily it pulls on shared electrons. When the two atoms in a bond have
+  different electronegativities, the cloud sits closer to the hungrier atom.
+  Push the difference high enough and the cloud detaches entirely.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">The electronegativity dial</h4>
+  <p class="interactive-hint">Pick two elements. The shared cloud morphs with the EN difference. There is no jump between covalent and ionic — only a slide.</p>
+  <div class="interactive-stage" id="tug-stage"></div>
+  <div class="interactive-controls">
+    <div class="picker-row">
+      <span class="control-label">atom A</span>
+      <div class="element-picker" id="tug-pick-a"></div>
+    </div>
+    <div class="picker-row">
+      <span class="control-label">atom B</span>
+      <div class="element-picker" id="tug-pick-b"></div>
+    </div>
+    <button class="btn" id="tug-swap">&#8646; swap</button>
+  </div>
+  <div class="interactive-readout" id="tug-readout"></div>
+  <div class="continuum-wrap" id="tug-continuum"></div>
+</div>
+
+<div class="callout note">
+  <div class="callout-label">Note</div>
+  <p>
+    The conventional cutoffs &mdash; $\Delta\chi < 0.4$ "nonpolar covalent",
+    $0.4$&ndash;$1.7$ "polar covalent", $> 1.7$&ndash;$2.0$ "ionic" &mdash;
+    are conventions, not physics. The cloud morphs smoothly; the labels are
+    just regions we drew on the dial. The continuum bar uses fuzzy borders to
+    say exactly that.
+  </p>
+</div>
+
+<h2 id="lattice"><span class="section-number">4.4</span> The ionic end, in bulk</h2>
+
+<p>
+  When the cloud detaches completely, the two atoms become a positive ion and
+  a negative ion. Now an important fact: a single Na$^+$ and a single Cl$^-$
+  don't pair up. Each ion's charge pulls on <em>every</em> oppositely-charged
+  neighbor, in all directions, with the same kind of $1/r^2$ attraction.
+  There's no reason to bind to just one partner. So ions stack: every Na$^+$
+  surrounds itself with as many Cl$^-$ neighbors as fit, and vice versa.
+  The result is a <strong>crystal</strong>.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">The rock-salt lattice</h4>
+  <p class="interactive-hint">Drag to rotate. Every Na&#8314; sits in a cage of six Cl&#8315;, and vice versa. "NaCl molecule" is the wrong unit — the crystal is.</p>
+  <div class="interactive-stage" id="lattice-stage" style="height: min(64vw, 420px); width: 100%;"></div>
+  <div class="interactive-readout">cubic NaCl &mdash; each ion sits at the center of six oppositely-charged neighbors</div>
+</div>
+
+<p>
+  Two consequences fall out for free. <strong>Salt is brittle:</strong> if you
+  shear one layer half a unit cell, suddenly like charges face like charges
+  and the crystal cleaves cleanly along that plane.
+  <strong>Salt dissolves in water</strong> because each ion can swap its
+  crystal neighbors for a shell of water molecules whose own partial charges
+  do the same job (a topic for a future chapter). And there's no such thing
+  as one NaCl molecule walking around: the unit of matter here is the
+  crystal, not a pair.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Why salt cleaves</h4>
+  <p class="interactive-hint">Push the top layer half a cell over. Like charges line up, the layer flies apart.</p>
+  <div class="interactive-stage" id="shear-stage"></div>
+  <div class="interactive-controls">
+    <button class="btn primary" id="shear-push">push the layer</button>
+    <button class="btn" id="shear-reset">&#x21bb; reset</button>
+  </div>
+  <div class="interactive-readout" id="shear-readout">resting crystal &mdash; opposite charges meet at every interface</div>
+</div>
+
+<h2 id="continuum"><span class="section-number">4.5</span> Real bonds on the dial</h2>
+
+<p>
+  Time to stop talking and place real bonds at their real positions on the
+  one axis. Hover or tap a bond to read its character.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">The bonding continuum</h4>
+  <p class="interactive-hint">One axis, all of bonding. The three "kinds" are three regions of one number.</p>
+  <div class="interactive-stage" id="cont-stage"></div>
+  <div class="bond-chips" id="cont-chips"></div>
+  <div class="interactive-readout" id="cont-readout">hover a bond to see its &Delta;EN and character</div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-label">Key insight</div>
+  <p>
+    Chemistry's three "kinds" of bond are three regions of one axis. Asking
+    "is this bond covalent or ionic?" is like asking whether 1.9 is small or
+    big. There's a smooth dial. The position on it is set by one number you
+    already know how to compute: $\Delta\chi$.
+  </p>
+</div>
+
+<h2 id="recap"><span class="section-number">4.6</span> What you now have</h2>
+
+<ul>
+  <li>Atoms bind because shared electrons lower the energy. The minimum of
+      the potential-energy curve is the bond: depth = bond energy, position
+      = bond length.</li>
+  <li>"Shared" means wave overlap in phase: extra probability density between
+      the nuclei. That is a <strong>covalent bond</strong>.</li>
+  <li>If the two atoms have different electronegativities, the cloud sits
+      closer to the hungrier one. Big enough $\Delta\chi$ and the cloud
+      detaches: you have <strong>ions</strong>.</li>
+  <li>Ions don't pair up; their attractions point everywhere, so they form
+      <strong>crystals</strong>. NaCl is a lattice, not a molecule.</li>
+  <li>Covalent, polar, ionic are three names for three regions of one
+      continuous axis: $\Delta\chi$.</li>
+</ul>
+
+<div class="boss-panel">
+  <div class="interactive-label">Boss level</div>
+  <h4 class="interactive-title">Call the bond</h4>
+  <p class="interactive-hint">Six rounds. Given a pair, predict whether the bond is nearly even, polar, or ionic. The continuum bar reveals the answer.</p>
+  <div class="interactive-stage" id="boss-stage"></div>
+  <div class="bond-options" id="boss-options"></div>
+  <div class="interactive-readout" id="boss-readout"></div>
+  <div class="boss-progress" id="boss-progress"></div>
+</div>
+
+</article>
+
+<nav class="lecture-nav">
+  <a class="nav-card prev" href="03-the-table.html">
+    <div class="nav-dir">Previous</div>
+    <div class="nav-title">The table is a map</div>
+  </a>
+  <a class="nav-card next" href="05-building-molecules.html">
+    <div class="nav-dir">Next</div>
+    <div class="nav-title">Building molecules</div>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  valence shell game &middot; chapter 4 of 5
+</footer>
+
+</div>
+</div>
+
+<script type="module" src="../scripts/shared.js"></script>
+<script type="module" src="../scripts/ch04/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where electrons live — Valence Shell Game</title>
+<meta name="description" content="Why the planetary model of the atom fails, and how standing waves give electrons their true homes: orbitals.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="../styles/shared.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<button class="menu-toggle" aria-label="Table of contents">menu</button>
+
+<aside class="sidebar">
+  <a class="sidebar-title" href="../index.html">Valence Shell Game</a>
+  <div class="sidebar-eyebrow">Chapter 1 of 5</div>
+  <ul class="toc"></ul>
+</aside>
+
+<div class="page">
+<div class="content">
+
+<header class="lecture-header">
+  <div class="eyebrow">Chapter 1</div>
+  <h1>Where electrons live</h1>
+  <p class="lecture-desc">
+    The orbiting-planet picture of the atom destroys itself in a few
+    picoseconds. What replaces it is stranger and better: electrons as
+    standing waves, with quantized energies and shapes you can hold.
+  </p>
+  <div class="tags">
+    <span class="tag">standing waves</span>
+    <span class="tag">orbitals</span>
+    <span class="tag">quantum numbers</span>
+  </div>
+</header>
+
+<nav class="lecture-nav-top">
+  <a href="02-filling-order.html">Next: The filling order &#8594;</a>
+</nav>
+
+<article>
+
+<p class="lecture-roadmap">
+  You know atoms have a nucleus of protons and neutrons, with electrons
+  somewhere outside. This chapter pins down the "somewhere": first by breaking
+  the obvious orbit picture, then by rebuilding it from the physics of waves.
+  By the end you will be rotating the true shapes of electron clouds in 3D.
+</p>
+
+<h2 id="scale"><span class="section-number">1.1</span> The atom is mostly nothing</h2>
+
+<p>
+  An atom is about $10^{-10}$ meters across. Its nucleus, holding nearly all
+  the mass, is about $10^{-15}$ meters: a hundred thousand times smaller.
+  Scaled up so the nucleus is a marble at the center of a stadium, the
+  electrons occupy the entire stadium, and everything in between is empty.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Zoom into an atom</h4>
+  <p class="interactive-hint">Drag the slider to dive five orders of magnitude, from the electron cloud down to the nucleus.</p>
+  <div class="interactive-stage" id="scale-stage"></div>
+  <div class="interactive-controls">
+    <div class="control-group">
+      <span class="control-label">zoom</span>
+      <input type="range" id="scale-zoom" min="0" max="4.2" step="0.01" value="0">
+    </div>
+    <div class="control-group">
+      <span class="control-label">field of view</span>
+      <span class="control-value" id="scale-readout">10⁻¹⁰ m — the whole atom</span>
+    </div>
+  </div>
+</div>
+
+<p>
+  So the real question about atomic structure is not about the nucleus. It is:
+  <strong>what are the electrons doing in all that space?</strong> Everything
+  in this course — the periodic table, bonding, all of chemistry — is the
+  answer to that one question.
+</p>
+
+<h2 id="planetary"><span class="section-number">1.2</span> The obvious guess destroys itself</h2>
+
+<p>
+  The electron is light and negative; the nucleus is heavy and positive.
+  Opposite charges attract with a force that weakens with distance squared,
+  exactly like gravity between a planet and the sun. So the obvious model is
+  a tiny solar system: electrons orbiting the nucleus.
+</p>
+
+<p>
+  Classical physics kills this model. An orbiting electron is constantly
+  changing direction, which means it is accelerating, and
+  <strong>accelerating charges radiate energy away</strong> as
+  electromagnetic waves. This is not exotic physics: it is how every radio
+  antenna works, electrons sloshing up and down a metal rod, broadcasting.
+  An orbiting electron must broadcast too. Radiating costs energy, so the
+  orbit shrinks. The shrinking is fast.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Run the classical atom</h4>
+  <p class="interactive-hint">Press play and watch a planetary hydrogen atom obey classical physics.</p>
+  <div class="interactive-stage" id="collapse-stage"></div>
+  <div class="interactive-controls">
+    <button class="btn primary" id="collapse-run">&#9654; release the electron</button>
+    <div class="control-group">
+      <span class="control-label">elapsed</span>
+      <span class="control-value" id="collapse-readout">0 ps</span>
+    </div>
+  </div>
+</div>
+
+<p>
+  Sixteen picoseconds. If atoms were tiny solar systems, every atom in the
+  universe would have collapsed into its nucleus within a hundredth of a
+  nanosecond, with a flash of radiation. Matter would not exist.
+  There is a second failure, quieter but just as damning: orbits can have
+  <em>any</em> radius and <em>any</em> energy, so no two atoms would need to
+  match. Yet every hydrogen atom in the universe is identical — same size,
+  same chemistry, same colors of emitted light. Something is forcing electrons
+  into specific, repeatable states. Orbits have no such force. Waves do.
+</p>
+
+<h2 id="waves"><span class="section-number">1.3</span> Waves that close on themselves</h2>
+
+<p>
+  A guitar string can only vibrate in certain patterns: one bump, two bumps,
+  three. Half a bump is impossible, because the ends are pinned. The string's
+  shape is a <strong>standing wave</strong>, and pinning its ends
+  <em>quantizes</em> it: a whole-number count of bumps, nothing in between.
+</p>
+
+<p>
+  In 1924, Louis de Broglie proposed that electrons are waves too, with a
+  wavelength tied to their momentum. (Within three years, experiments
+  confirmed it: electron beams diffract off crystals exactly like waves do.)
+  Now run the orbit idea again, but for a wave. A wave traveling around a
+  closed loop has no pinned ends; instead it has a harsher constraint.
+  After a full lap it meets itself, and it had better line up:
+</p>
+
+<p style="text-align:center;">
+  $$\htmlData{tip=The distance around the loop, circumference}{2\pi r} = n\,\htmlData{tip=The electron's wavelength}{\lambda}, \quad n = 1, 2, 3, \ldots$$
+</p>
+
+<p>
+  If a whole number of wavelengths fits the loop, the wave reinforces itself
+  lap after lap and survives. If not, each lap arrives out of step with the
+  last, crest cancels trough, and the wave erases itself.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Fit a wave around a loop</h4>
+  <p class="interactive-hint">Slide the wavelength count. Ghost laps show the wave re-meeting itself: aligned laps glow, misaligned laps cancel.</p>
+  <div class="interactive-stage" id="wave-stage"></div>
+  <div class="interactive-controls">
+    <div class="control-group">
+      <span class="control-label">wavelengths around the loop</span>
+      <input type="range" id="wave-n" min="1" max="6" step="0.02" value="3">
+    </div>
+    <div class="control-group">
+      <span class="control-label">verdict</span>
+      <span class="control-value" id="wave-readout"></span>
+    </div>
+  </div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-label">Key insight</div>
+  <p>
+    Quantization is not an extra rule bolted onto atoms. It is what waves do
+    in confinement. A confined wave can only exist in specific patterns, so a
+    wave-electron can only exist in specific states with specific energies.
+    That is why every hydrogen atom is identical.
+  </p>
+</div>
+
+<h2 id="orbitals"><span class="section-number">1.4</span> Orbitals: standing waves in 3D</h2>
+
+<p>
+  The loop picture is still a cartoon: it confines the wave to a circle. A
+  real electron's wave fills three-dimensional space around the nucleus,
+  pulled inward by attraction. Solving the actual wave equation (Schr&ouml;dinger,
+  1926) gives the true standing-wave patterns. Each pattern is called an
+  <strong>orbital</strong>.
+</p>
+
+<div class="callout definition">
+  <div class="callout-label">Definition</div>
+  <p>
+    An <strong>orbital</strong> is a 3D standing-wave pattern an electron can
+    occupy around a nucleus. The wave $\htmlData{tip=The Greek letter psi, the wave's value at each point in space}{\psi}$
+    has a value at every point; its square $|\psi|^2$ gives the
+    <strong>probability</strong> of finding the electron at that point.
+    An orbital is not a path. The electron does not travel along it; the
+    electron's "location" <em>is</em> this cloud of probability.
+  </p>
+</div>
+
+<p>
+  Each pattern is labeled by three whole numbers, and the numbers are not
+  arbitrary bookkeeping: they count things about the wave, the same way
+  "three bumps" counted the guitar string's pattern.
+</p>
+
+<ul>
+  <li><strong>$n$ — size and energy</strong> (1, 2, 3, ...). Bigger $n$ means a bigger
+      cloud, farther from the nucleus on average, and higher energy.</li>
+  <li><strong>$\ell$ — shape family</strong> (0 up to $n-1$). Chemists name the families
+      with letters: <span class="chip sub-s">&#8467; = 0 &#8594; s</span>
+      <span class="chip sub-p">&#8467; = 1 &#8594; p</span>
+      <span class="chip sub-d">&#8467; = 2 &#8594; d</span>
+      <span class="chip sub-f">&#8467; = 3 &#8594; f</span>
+      &nbsp;(the letters are historical accident; the colors will follow these
+      families through the whole course).</li>
+  <li><strong>$m$ — orientation</strong> ($-\ell$ to $+\ell$). The same shape, pointed
+      different ways. Count them: one s, three p, five d, seven f.</li>
+</ul>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">The orbital viewer</h4>
+  <p class="interactive-hint">Drag to rotate, scroll to zoom. Each dot is one sample of where the electron might be. Try 1s, then 2p, then 3d.</p>
+  <div class="interactive-stage" id="orbital-stage" style="height: min(64vw, 480px); width: 100%;"></div>
+  <div class="interactive-controls">
+    <div class="control-group">
+      <span class="control-label">n &mdash; size</span>
+      <div class="seg-toggle" id="orb-n"></div>
+    </div>
+    <div class="control-group">
+      <span class="control-label">&#8467; &mdash; shape</span>
+      <div class="seg-toggle" id="orb-l"></div>
+    </div>
+    <div class="control-group">
+      <span class="control-label">m &mdash; orientation</span>
+      <div class="seg-toggle" id="orb-m"></div>
+    </div>
+    <div class="control-group">
+      <span class="control-label">wave sign</span>
+      <div class="seg-toggle" id="orb-phase">
+        <button class="seg-btn" aria-pressed="true" data-v="1">show</button>
+        <button class="seg-btn" aria-pressed="false" data-v="0">hide</button>
+      </div>
+    </div>
+  </div>
+  <div class="interactive-readout" id="orb-readout"></div>
+</div>
+
+<p>
+  Two things to notice while you explore. First, clouds have
+  <strong>nodes</strong>: surfaces where the wave is exactly zero and the
+  electron is never found, just like the still points on a vibrating string.
+  The 2s orbital is a sphere with a hollow shell of silence inside it. Second,
+  the wave has a <strong>sign</strong>: in the viewer, pale regions are where
+  the wave is negative. The electron doesn't care about sign ($|\psi|^2$
+  erases it), but when two atoms' waves overlap in chapter 4, sign decides
+  whether they reinforce or cancel. File it away.
+</p>
+
+<div class="callout note">
+  <div class="callout-label">Looking ahead</div>
+  <p>
+    Every (n, &#8467;, m) combination is one orbital: one available
+    standing-wave state. Chemists group the orbitals sharing an $n$ and $\ell$
+    into a <strong>subshell</strong> (2p means "the three $n=2$, $\ell=1$
+    orbitals"), and all subshells with the same $n$ into a
+    <strong>shell</strong>. These are the seats of the theater. Chapter 2
+    seats the audience.
+  </p>
+</div>
+
+<h2 id="radial"><span class="section-number">1.5</span> How far out is the electron?</h2>
+
+<p>
+  The 3D clouds answer "what shape"; one more chart answers "how far".
+  Plot the probability of finding the electron at each distance from the
+  nucleus, and patterns emerge that will quietly run the next two chapters.
+</p>
+
+<div class="interactive wide">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Radial probability</h4>
+  <p class="interactive-hint">Each curve: how likely the electron is to sit at distance r from the nucleus. Switch comparisons.</p>
+  <div class="interactive-stage" id="radial-stage"></div>
+  <div class="interactive-controls">
+    <div class="seg-toggle" id="radial-preset">
+      <button class="seg-btn" aria-pressed="true" data-v="ladder">1s vs 2s vs 3s</button>
+      <button class="seg-btn" aria-pressed="false" data-v="shapes">3s vs 3p vs 3d</button>
+      <button class="seg-btn" aria-pressed="false" data-v="cross">4s vs 3d</button>
+    </div>
+  </div>
+  <div class="interactive-readout" id="radial-readout"></div>
+</div>
+
+<p>
+  Three observations, in increasing order of importance:
+</p>
+
+<ol>
+  <li>Bigger $n$ lives farther out — that is $n$ as "size" again.</li>
+  <li>Higher-$n$ orbitals keep <strong>inner lobes</strong>: small humps of
+      probability close to the nucleus, one per node. A 3s electron is
+      <em>mostly</em> far out, but part of its cloud dips deep inside.</li>
+  <li>Compare 4s with 3d. The 4s cloud is mostly <em>farther out</em> than 3d,
+      but its inner lobes sneak <em>closer to the nucleus</em> than 3d ever
+      does. This sneaking-in is called <strong>penetration</strong>.</li>
+</ol>
+
+<div class="callout insight">
+  <div class="callout-label">Key insight</div>
+  <p>
+    Penetration looks like a footnote. It is not. In an atom with many
+    electrons, an orbital that penetrates close to the nucleus feels the
+    nucleus's full pull where other orbitals feel a screened, weakened
+    version. That tiny detail will decide the entire architecture of the
+    periodic table in the next chapter.
+  </p>
+</div>
+
+<h2 id="recap"><span class="section-number">1.6</span> What you now have</h2>
+
+<ul>
+  <li>Electrons can't orbit: accelerating charges radiate, and the atom
+      collapses in picoseconds. Identical atoms demand quantized states.</li>
+  <li>Confined waves quantize themselves: only whole-number patterns survive.</li>
+  <li>An electron in an atom is a 3D standing wave: an <strong>orbital</strong>,
+      labeled (n, &#8467;, m) for size, shape, orientation; probability cloud
+      $|\psi|^2$; one s, three p, five d, seven f per shell.</li>
+  <li>Radial views reveal nodes, inner lobes, and <strong>penetration</strong> —
+      loaded ammunition for chapter 2.</li>
+</ul>
+
+<div class="boss-panel">
+  <div class="interactive-label">Boss level</div>
+  <h4 class="interactive-title">Name that orbital</h4>
+  <p class="interactive-hint">A mystery cloud appears. Read its size, shape, and color family, and identify it. Five rounds.</p>
+  <div class="interactive-stage" id="boss-stage" style="height: min(60vw, 400px); width: 100%;"></div>
+  <div class="quiz-options" id="boss-options"></div>
+  <div class="interactive-readout" id="boss-readout"></div>
+  <div class="boss-progress" id="boss-progress"></div>
+</div>
+
+</article>
+
+<nav class="lecture-nav">
+  <span></span>
+  <a class="nav-card next" href="02-filling-order.html">
+    <div class="nav-dir">Next</div>
+    <div class="nav-title">The filling order</div>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  valence shell game · chapter 1 of 5
+</footer>
+
+</div>
+</div>
+
+<script type="module" src="../scripts/shared.js"></script>
+<script type="module" src="../scripts/ch01/main.js"></script>
+</body>
+</html>

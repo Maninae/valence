@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The table is a map &mdash; Valence Shell Game</title>
+<meta name="description" content="The periodic table is the filling order made visible. One number — effective nuclear charge — drives every trend across it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="../styles/shared.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  /* ---- ch03: periodic-table component ---- */
+  .ptable-wrap {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+  }
+  .ptable-wrap::-webkit-scrollbar { height: 8px; }
+  .ptable-wrap::-webkit-scrollbar-thumb { background: var(--rule-strong); border-radius: 99px; }
+  .ptable-svg { display: block; margin: 0 auto; }
+
+  /* cells: drawn as <g class="ptable-cell"> with rect + text */
+  .ptable-cell rect {
+    fill: var(--bg-elevated);
+    stroke: var(--rule);
+    stroke-width: 1;
+    transition: fill 0.18s ease, stroke 0.18s ease;
+  }
+  .ptable-cell text.sym {
+    font-family: var(--display);
+    font-weight: 600;
+    fill: var(--text-secondary);
+    text-anchor: middle;
+    dominant-baseline: central;
+    transition: fill 0.18s ease;
+  }
+  .ptable-cell text.z {
+    font-family: var(--mono);
+    fill: var(--text-muted);
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .ptable-cell.dim rect { fill: var(--bg-surface); opacity: 0.35; }
+  .ptable-cell.dim text.sym { opacity: 0.5; }
+  .ptable-cell.dim text.z { opacity: 0.5; }
+
+  .ptable-cell.clickable { cursor: pointer; }
+  .ptable-cell.clickable:hover rect { stroke: var(--accent); }
+  .ptable-cell.hl rect { stroke-width: 2; }
+  .ptable-cell.flash rect { filter: drop-shadow(0 0 6px currentColor); }
+
+  /* column / row labels */
+  .ptable-axis {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--text-muted);
+    text-anchor: middle;
+  }
+  .ptable-axis.group { cursor: pointer; }
+  .ptable-axis.group:hover { fill: var(--accent); }
+  .ptable-axis.group.active { fill: var(--accent); }
+
+  /* hint strip linking main table to f-block */
+  .fblock-link {
+    stroke: var(--rule-strong);
+    stroke-dasharray: 3 3;
+    fill: none;
+  }
+
+  /* heatmap legend strip */
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .heatmap-legend .bar {
+    flex: 1;
+    height: 8px;
+    max-width: 280px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--bg-elevated), var(--accent));
+    border: 1px solid var(--rule);
+  }
+
+  /* family preset row */
+  .family-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0 14px;
+  }
+  .family-members {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .family-members .mem {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .family-members .sym { color: var(--text-primary); font-weight: 600; }
+
+  /* builder controls row */
+  .builder-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 22px;
+  }
+  .builder-readout {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-secondary);
+    min-height: 1.4em;
+  }
+  .builder-readout .symbig {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-right: 12px;
+  }
+
+  /* block-legend strip */
+  .block-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 10px 0 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .block-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .block-legend i {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* boss specifics */
+  .boss-compare {
+    display: flex;
+    gap: 12px;
+    margin: 14px 0 4px;
+    flex-wrap: wrap;
+  }
+  .boss-compare .quiz-option {
+    flex: 1 1 200px;
+    text-align: center;
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    padding: 18px 12px;
+  }
+  .boss-compare .quiz-option .sub {
+    display: block;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .boss-prompt {
+    font-family: var(--display);
+    font-size: 18px;
+    color: var(--text-primary);
+    margin: 6px 0 4px;
+  }
+  .boss-task-hint {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .boss-config-target {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  /* hover panel that floats over the table */
+  .ptable-tooltip {
+    position: absolute;
+    pointer-events: none;
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--rule-strong);
+    border-radius: 9px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    z-index: 20;
+    white-space: nowrap;
+  }
+  .ptable-tooltip .name {
+    color: var(--text-primary);
+    font-family: var(--display);
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .interactive-hint.mobile-only { display: none; }
+  @media (max-width: 768px) {
+    .interactive-hint.mobile-only {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: -4px;
+    }
+    /* heatmap mode toggle scrolls horizontally on narrow screens */
+    #heatmap-mode {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    #heatmap-mode .seg-btn { flex-shrink: 0; }
+    /* tighter family preset buttons */
+    #family-presets .btn { padding: 6px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<button class="menu-toggle" aria-label="Table of contents">menu</button>
+
+<aside class="sidebar">
+  <a class="sidebar-title" href="../index.html">Valence Shell Game</a>
+  <div class="sidebar-eyebrow">Chapter 3 of 5</div>
+  <ul class="toc"></ul>
+</aside>
+
+<div class="page">
+<div class="content">
+
+<header class="lecture-header">
+  <div class="eyebrow">Chapter 3</div>
+  <h1>The table is a map</h1>
+  <p class="lecture-desc">
+    The periodic table is not a chart to memorize. Its weird shape is the
+    filling order made visible, and one number &mdash; effective nuclear
+    charge &mdash; drives every trend across it.
+  </p>
+  <div class="tags">
+    <span class="tag">blocks</span>
+    <span class="tag">valence</span>
+    <span class="tag">Z<sub>eff</sub> trends</span>
+  </div>
+</header>
+
+<nav class="lecture-nav-top">
+  <a href="02-filling-order.html">&#8592; The filling order</a>
+  <a href="04-one-continuum.html">One continuum, not three bonds &#8594;</a>
+</nav>
+
+<article>
+
+<p class="lecture-roadmap">
+  Chapter 2 gave you the filling order: 1s, 2s, 2p, 3s, 3p, 4s, 3d, 4p,
+  and so on. This chapter takes that one rule and lets it draw the
+  periodic table for you, block by block. Once the table exists, you'll
+  read three trends &mdash; size, ionization energy, electronegativity &mdash;
+  off the same number you already know: Z<sub>eff</sub>.
+</p>
+
+<h2 id="build"><span class="section-number">3.1</span> Build it, don&rsquo;t memorize it</h2>
+
+<p>
+  The filling order is a recipe. Hand it to a printer with one rule
+  &mdash; "drop each new element into the next empty slot, lined up by
+  the subshell it lands in" &mdash; and the printer draws the periodic
+  table. The shape is not a design choice. It is the recipe, frozen.
+</p>
+
+<p>
+  Press play. Each element appears in turn, colored by the subshell
+  whose electron just got added. Watch the s block (2 wide) and p block
+  (6 wide) fill periods 2 and 3 by themselves, then watch the d block
+  arrive in period 4 &mdash; ten elements wide, ten elements late.
+</p>
+
+<div class="interactive">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Build the table from the filling order</h4>
+  <p class="interactive-hint">Play, step, or scrub. Each cell lights up in filling-order sequence, colored by the block of its newest electron.</p>
+  <p class="interactive-hint mobile-only">Scroll the table sideways &mdash; it's wider than your screen.</p>
+  <div class="interactive-stage" id="builder-stage"></div>
+  <div class="interactive-controls">
+    <div class="builder-row">
+      <button class="btn primary" id="builder-play">&#9654; play</button>
+      <button class="btn" id="builder-step">step &#8594;</button>
+      <button class="btn" id="builder-reset">reset</button>
+      <div class="control-group">
+        <span class="control-label">scrub Z</span>
+        <input type="range" id="builder-scrub" min="0" max="86" step="1" value="0">
+      </div>
+    </div>
+  </div>
+  <div class="builder-readout" id="builder-readout">press play to begin</div>
+  <div class="block-legend">
+    <span><i style="background:var(--s-color);"></i> s block</span>
+    <span><i style="background:var(--p-color);"></i> p block</span>
+    <span><i style="background:var(--d-color);"></i> d block</span>
+    <span><i style="background:var(--f-color);"></i> f block (rows 9&ndash;10)</span>
+  </div>
+</div>
+
+<div class="callout insight">
+  <div class="callout-label">Key insight</div>
+  <p>
+    The table's weird wide middle is chapter 2's 4s/3d crossing made
+    geometric. Periods 1&ndash;3 have no d block because no d subshell
+    has filled yet. By scandium ($Z=21$) the 3d energy has finally
+    dropped enough to fill &mdash; and a whole decade of elements drops
+    into the middle. The lanthanides and actinides (the floating strip
+    at the bottom) are the same story for $f$.
+  </p>
+</div>
+
+<h2 id="blocks"><span class="section-number">3.2</span> Blocks are subshells</h2>
+
+<p>
+  Each colored region of the table is one subshell type filling.
+  Subshells come in fixed sizes (chapter 1: one $s$, three $p$, five $d$,
+  seven $f$ orbitals; two electrons per orbital), so block widths come
+  in fixed sizes too. The table is to scale.
+</p>
+
+<table>
+  <tr><th>Block</th><th>Subshell</th><th>Orbitals</th><th>Electrons</th><th>Columns wide</th></tr>
+  <tr><td><span class="chip sub-s">s</span></td><td>$\ell = 0$</td><td>1</td><td>2</td><td>2</td></tr>
+  <tr><td><span class="chip sub-p">p</span></td><td>$\ell = 1$</td><td>3</td><td>6</td><td>6</td></tr>
+  <tr><td><span class="chip sub-d">d</span></td><td>$\ell = 2$</td><td>5</td><td>10</td><td>10</td></tr>
+  <tr><td><span class="chip sub-f">f</span></td><td>$\ell = 3$</td><td>7</td><td>14</td><td>14</td></tr>
+</table>
+
+<p>
+  And the rows are not arbitrary either. The <strong>period number</strong>
+  (1, 2, 3, &hellip;) is the outermost shell's $n$. Period 4 is the
+  $n=4$ shell coming online; the 3d block that lives in period 4 is
+  there because its electrons fill <em>during</em> the period when 4s
+  has just opened. Counting rows is counting shells.
+</p>
+
+<h2 id="families"><span class="section-number">3.3</span> Columns are families</h2>
+
+<p>
+  Elements in the same column have the same outer-shell configuration,
+  just stacked at a higher $n$. Lithium is $[\text{He}]\,2s^1$; sodium
+  is $[\text{Ne}]\,3s^1$; potassium is $[\text{Ar}]\,4s^1$. All three
+  have one lonely $s$ electron orbiting outside a closed shell. They
+  react the same way because the part of the atom doing the chemistry
+  is the same.
+</p>
+
+<div class="callout definition">
+  <div class="callout-label">Definition</div>
+  <p>
+    The <strong>valence electrons</strong> are the electrons in the
+    outermost shell &mdash; the highest $n$ &mdash; specifically its
+    $s$ and $p$ occupants. They are the electrons an atom uses to bond.
+    Inner shells (called the <strong>core</strong>) sit too deep to
+    interact with other atoms; they just sit there shielding the
+    nucleus. Chemistry is a story about valence electrons.
+  </p>
+</div>
+
+<div class="interactive">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Pick a family</h4>
+  <p class="interactive-hint">Each preset highlights one column and shows its members' valence configurations.</p>
+  <div class="family-row" id="family-presets">
+    <button class="btn" data-fam="alkali">alkali metals (ns&#185;)</button>
+    <button class="btn" data-fam="alkaline">alkaline earth (ns&#178;)</button>
+    <button class="btn" data-fam="carbon">carbon family (ns&#178;np&#178;)</button>
+    <button class="btn" data-fam="halogens">halogens (ns&#178;np&#8309;)</button>
+    <button class="btn" data-fam="noble">noble gases (ns&#178;np&#8310;)</button>
+  </div>
+  <div class="interactive-stage" id="families-stage"></div>
+  <div class="family-members" id="families-members"></div>
+  <div class="interactive-readout" id="families-readout">pick a family above</div>
+</div>
+
+<p>
+  Three families tell the rest of the story already. <strong>Alkali
+  metals</strong> have one electron beyond a noble-gas core: it sits
+  far out, shielded from the nucleus by everything below, easy to peel
+  off. So alkalis are violently eager to lose that one electron.
+  <strong>Halogens</strong> are one electron short of a full outer
+  shell ($ns^2 np^5$, missing one $p$ slot): they grab. <strong>Noble
+  gases</strong> have a full outer shell ($ns^2 np^6$): nothing to
+  give, no need to take. They barely react.
+</p>
+
+<h2 id="zeff"><span class="section-number">3.4</span> One number drives the map</h2>
+
+<p>
+  In chapter 2 we built $Z_{\text{eff}}$, the
+  <strong>effective nuclear charge</strong>: the nuclear pull an outer
+  electron actually feels after inner electrons screen it. It is not
+  the proton count $Z$ &mdash; it is the proton count minus a shielding
+  number. Across a row of the table, that one number does almost all
+  the explaining.
+</p>
+
+<p>
+  Move right along a period. Each new element adds one proton ($Z\uparrow$)
+  and one electron to the <em>same</em> outer shell. Same-shell
+  electrons are bad at shielding each other (they orbit at similar
+  distances), so the shielding barely budges while $Z$ climbs.
+  $Z_{\text{eff}}$ rises across the row. The outer cloud gets pulled
+  tighter to the nucleus &mdash; smaller, harder to ionize, hungrier in
+  bonds.
+</p>
+
+<p>
+  Move down a column. Each new period puts the valence electrons in a
+  whole new shell, farther out, with a full extra inner shell beneath
+  them. Shielding jumps, distance grows. The cloud gets bigger and the
+  outer electron easier to give up.
+</p>
+
+<div class="interactive">
+  <div class="interactive-label">Interactive</div>
+  <h4 class="interactive-title">Trend heatmaps</h4>
+  <p class="interactive-hint">Switch what colors the cells. Hover any element to see its number. Look for the right-and-up gradient.</p>
+  <div class="interactive-controls" style="border-top: none; padding-top: 0; margin-bottom: 14px;">
+    <div class="seg-toggle" id="heatmap-mode">
+      <button class="seg-btn" aria-pressed="true" data-v="blocks">blocks</button>
+      <button class="seg-btn" data-v="size">modeled size</button>
+      <button class="seg-btn" data-v="ie1">ionization energy</button>
+      <button class="seg-btn" data-v="en">electronegativity</button>
+    </div>
+  </div>
+  <div class="interactive-stage" id="heatmap-stage"></div>
+  <div class="heatmap-legend" id="heatmap-legend">
+    <span id="heatmap-min">low</span>
+    <span class="bar" id="heatmap-bar"></span>
+    <span id="heatmap-max">high</span>
+  </div>
+  <div class="interactive-readout" id="heatmap-readout">choose a layer above</div>
+</div>
+
+<div class="callout definition">
+  <div class="callout-label">Definition</div>
+  <p>
+    <strong>Electronegativity</strong> ($\chi$, on the Pauling scale) is
+    how strongly an atom pulls on the electrons it is sharing with
+    another atom in a bond. High $\chi$ atoms (fluorine 3.98, oxygen
+    3.44) drag shared electrons toward themselves; low $\chi$ atoms
+    (cesium 0.79, sodium 0.93) give them up easily. The pattern is just
+    $Z_{\text{eff}}$ wearing a different hat: tighter grip on your own
+    electrons means tighter grip on borrowed ones too.
+  </p>
+</div>
+
+<div class="callout note">
+  <div class="callout-label">Looking ahead</div>
+  <p>
+    Electronegativity is the only number you need to predict whether a
+    bond looks covalent, polar, or ionic. Chapter 4 is one continuous
+    spectrum, controlled by $\Delta\chi$ between the two atoms in the
+    bond. The map you just read sets that up.
+  </p>
+</div>
+
+<h2 id="recap"><span class="section-number">3.5</span> What you now have</h2>
+
+<ul>
+  <li>The periodic table's shape is the filling order made visible.
+      Block widths are subshell sizes ($s{:}2$, $p{:}6$, $d{:}10$,
+      $f{:}14$); period number is the outermost shell's $n$.</li>
+  <li>Columns are families: same outer configuration, same chemistry.
+      Alkali metals lose one electron eagerly; halogens grab one;
+      noble gases sit content.</li>
+  <li>The <strong>valence electrons</strong> &mdash; outer $s$ and $p$ &mdash;
+      do the chemistry. Cores just shield.</li>
+  <li>$Z_{\text{eff}}$ climbs right (same shell, less shielding gain
+      per proton) and drops down (new shell, more screen): atoms shrink
+      right, grow down; ionization energy and electronegativity rise
+      right, fall down.</li>
+  <li>Electronegativity ($\chi$) is the next chapter's engine.</li>
+</ul>
+
+<div class="boss-panel">
+  <div class="interactive-label">Boss level</div>
+  <h4 class="interactive-title">Read the map</h4>
+  <p class="interactive-hint">Six rounds. Some are comparisons (which atom has more of X?); some ask you to locate an element from its outer configuration by clicking the table.</p>
+  <div id="boss-body">
+    <div class="boss-prompt" id="boss-prompt"></div>
+    <div class="boss-task-hint" id="boss-task-hint"></div>
+    <div class="quiz-options boss-compare" id="boss-options"></div>
+    <div class="interactive-stage" id="boss-stage" style="display:none;"></div>
+  </div>
+  <div class="interactive-readout" id="boss-readout"></div>
+  <div class="boss-progress" id="boss-progress"></div>
+</div>
+
+</article>
+
+<nav class="lecture-nav">
+  <a class="nav-card prev" href="02-filling-order.html">
+    <div class="nav-dir">Previous</div>
+    <div class="nav-title">The filling order</div>
+  </a>
+  <a class="nav-card next" href="04-one-continuum.html">
+    <div class="nav-dir">Next</div>
+    <div class="nav-title">One continuum, not three bonds</div>
+  </a>
+</nav>
+
+<footer class="site-footer">
+  valence shell game &middot; chapter 3 of 5
+</footer>
+
+</div>
+</div>
+
+<script type="module" src="../scripts/shared.js"></script>
+<script type="module" src="../scripts/ch03/main.js"></script>
+</body>
+</html>
